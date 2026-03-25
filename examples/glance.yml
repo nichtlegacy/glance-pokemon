@@ -6,3 +6,6 @@ pages:
       - size: small
         widgets:
           - $include: widgets/random-pokemon.yml
+            options:
+              min-id: 1
+              max-id: 493

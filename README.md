@@ -15,13 +15,23 @@
 <p align="center">
   <a href="#overview">Overview</a> •
   <a href="#quick-start">Quick Start</a> •
+  <a href="#widget-options">Widget Options</a> •
   <a href="#widget-details">Widget Details</a> •
   <a href="#references">References</a>
 </p>
 
-<p align="center">
-  <img src="docs/pokemon-widget.png" alt="Random Pokemon widget preview" width="420">
-</p>
+<table align="center" border="0">
+  <tr>
+    <td align="center"><img src="docs/pokemon-widget-1.png" alt="Random Pokemon widget preview 1" height="280"></td>
+    <td align="center"><img src="docs/pokemon-widget-2.png" alt="Random Pokemon widget preview 2" height="280"></td>
+    <td align="center"><img src="docs/pokemon-widget-3.png" alt="Random Pokemon widget preview 3" height="280"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><em>Normal</em></sub></td>
+    <td align="center"><sub><em>Legendary</em></sub></td>
+    <td align="center"><sub><em>Mythical</em></sub></td>
+  </tr>
+</table>
 
 ---
 
@@ -62,9 +72,72 @@ pages:
       - size: small
         widgets:
           - $include: widgets/random-pokemon.yml
+            options:
+              min-id: 1
+              max-id: 151
 ```
 
 Reference config: `examples/glance.yml`
+
+---
+
+## Widget Options
+
+### Random Pokemon (`widgets/random-pokemon.yml`)
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `min-id` | int | `1` | Lowest Pokedex number allowed for the random selection |
+| `max-id` | int | `1025` | Highest Pokedex number allowed for the random selection |
+
+Behavior notes:
+
+- the widget clamps values to the supported national Pokedex range of `1-1025`
+- if `min-id` is greater than `max-id`, the widget swaps them automatically
+- this makes `Gen 1 only`, `Gen 1-4`, or `Gen 4 only` setups possible without editing the template
+
+### Generation Ranges
+
+| Generation | Pokedex Range |
+|---|---|
+| Gen 1 | `1-151` |
+| Gen 2 | `152-251` |
+| Gen 3 | `252-386` |
+| Gen 4 | `387-493` |
+| Gen 5 | `494-649` |
+| Gen 6 | `650-721` |
+| Gen 7 | `722-809` |
+| Gen 8 | `810-905` |
+| Gen 9 | `906-1025` |
+
+### Example Ranges
+
+**Gen 1 only**
+
+```yaml
+- $include: widgets/random-pokemon.yml
+  options:
+    min-id: 1
+    max-id: 151
+```
+
+**Gen 1-4**
+
+```yaml
+- $include: widgets/random-pokemon.yml
+  options:
+    min-id: 1
+    max-id: 493
+```
+
+**Gen 4 only**
+
+```yaml
+- $include: widgets/random-pokemon.yml
+  options:
+    min-id: 387
+    max-id: 493
+```
 
 ---
 
@@ -80,10 +153,12 @@ Reference config: `examples/glance.yml`
 - type: custom-api
   title: Random Pokemon
   cache: 5m
-  url: https://www.randomnumberapi.com/api/v1.0/random?min=1&max=1025&count=1
+  options:
+    min-id: 1
+    max-id: 1025
   template: |
-    # Random ID lookup, Pokemon data requests, species lookup, and rendering
-    # are handled inside the template
+    # Random ID lookup within the configured range, Pokemon data requests,
+    # species lookup, and rendering are handled inside the template
     ...
 ```
 
@@ -91,6 +166,7 @@ Reference config: `examples/glance.yml`
 
 - the widget is tuned for a `small` Glance column
 - each refresh selects a new random Pokemon and caches the result for `5m`
+- the selection range can be limited with `min-id` and `max-id`
 - the artwork circle, divider accents, and artwork shadow adapt to the Pokemon type palette
 - dual-type Pokemon blend primary and secondary type colors in the accent treatment
 - species data adds `Legendary` and `Mythical` badges when available
