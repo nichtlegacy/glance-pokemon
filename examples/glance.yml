@@ -1,0 +1,6 @@
+pages:
+  - name: Fun
+    columns:
+      - size: small
+        widgets:
+          - $include: widgets/random-pokemon.yml

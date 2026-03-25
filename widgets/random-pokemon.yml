@@ -1,0 +1,342 @@
+- type: custom-api
+  title: Random Pokémon
+  cache: 5m
+  url: https://www.randomnumberapi.com/api/v1.0/random?min=1&max=1025&count=1
+  template: |
+    {{ $randomStatus := .Response.StatusCode }}
+    {{ $pokemonId := .JSON.Int "0" }}
+
+    <style>
+      .pokemon-card {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.85rem;
+        --pokemon-art-shadow: rgba(0, 0, 0, 0.22);
+      }
+
+      .pokemon-art-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 1rem;
+        background:
+          radial-gradient(circle at 28% 24%, var(--pokemon-accent-primary, rgba(255, 255, 255, 0.24)), transparent 38%),
+          radial-gradient(circle at 76% 30%, var(--pokemon-accent-secondary, rgba(255, 255, 255, 0.18)), transparent 40%),
+          radial-gradient(circle at 52% 78%, var(--pokemon-accent-primary-soft, rgba(255, 255, 255, 0.1)), transparent 46%),
+          linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+      }
+
+      .pokemon-art {
+        width: 112px;
+        height: 112px;
+        object-fit: contain;
+        filter: drop-shadow(0 10px 18px var(--pokemon-art-shadow));
+      }
+
+      .pokemon-heading {
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        gap: 0.45rem;
+        flex-wrap: wrap;
+      }
+
+      .pokemon-number {
+        color: var(--color-text-subdue);
+      }
+
+      .pokemon-name {
+        text-transform: capitalize;
+      }
+
+      .pokemon-badges,
+      .pokemon-types {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.45rem;
+      }
+
+      .pokemon-badge,
+      .pokemon-type {
+        border-radius: 999px;
+        padding: 0.28rem 0.72rem;
+        font-size: 0.78rem;
+        line-height: 1.25;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+
+      .pokemon-badge {
+        background: var(--color-widget-background-highlight);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+      }
+
+      .pokemon-badge-legendary {
+        color: #ffe08a;
+        background: linear-gradient(135deg, var(--pokemon-accent-primary-soft, rgba(255, 209, 102, 0.12)), rgba(255, 209, 102, 0.16));
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+      }
+
+      .pokemon-badge-mythical {
+        color: #ffb6e0;
+        background: linear-gradient(135deg, var(--pokemon-accent-secondary, rgba(255, 139, 209, 0.14)), rgba(255, 139, 209, 0.14));
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+      }
+
+      .pokemon-stats {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.8rem 0.7rem;
+      }
+
+      .pokemon-divider {
+        align-self: stretch;
+        flex-shrink: 0;
+        width: 100%;
+        height: 2px;
+        border-radius: 999px;
+        opacity: 0.72;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--pokemon-accent-primary-soft, rgba(255, 255, 255, 0.12)),
+          var(--pokemon-accent-secondary, rgba(255, 255, 255, 0.16)),
+          transparent
+        );
+      }
+
+      .pokemon-stat {
+        min-width: 0;
+      }
+
+      .pokemon-stat-value {
+        line-height: 1.05;
+      }
+
+      .pokemon-meta {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.8rem;
+      }
+
+      .pokemon-meta-item {
+        min-width: 0;
+      }
+
+      .pokemon-meta-value {
+        line-height: 1.05;
+      }
+
+      .pokemon-meta-unit {
+        color: var(--color-text-subdue);
+        font-size: 0.82em;
+        font-weight: 600;
+      }
+
+      .type-normal{background:#a8a77a;color:#fff}
+      .type-fire{background:#ee8130;color:#fff}
+      .type-water{background:#6390f0;color:#fff}
+      .type-electric{background:#f7d02c;color:#1a1a1a}
+      .type-grass{background:#7ac74c;color:#fff}
+      .type-ice{background:#96d9d6;color:#1a1a1a}
+      .type-fighting{background:#c22e28;color:#fff}
+      .type-poison{background:#a33ea1;color:#fff}
+      .type-ground{background:#e2bf65;color:#1a1a1a}
+      .type-flying{background:#a98ff3;color:#fff}
+      .type-psychic{background:#f95587;color:#fff}
+      .type-bug{background:#a6b91a;color:#fff}
+      .type-rock{background:#b6a136;color:#fff}
+      .type-ghost{background:#735797;color:#fff}
+      .type-dragon{background:#6f35fc;color:#fff}
+      .type-dark{background:#705746;color:#fff}
+      .type-steel{background:#b7b7ce;color:#1a1a1a}
+      .type-fairy{background:#d685ad;color:#fff}
+      .type-stellar{background:#4466ff;color:#fff}
+      .type-shadow{background:#5a5a78;color:#fff}
+      .type-unknown{background:#6b7280;color:#fff}
+
+      .accent-primary-normal{--pokemon-accent-primary:rgba(168,167,122,0.3);--pokemon-accent-primary-soft:rgba(168,167,122,0.14)}
+      .accent-primary-fire{--pokemon-accent-primary:rgba(238,129,48,0.32);--pokemon-accent-primary-soft:rgba(238,129,48,0.16)}
+      .accent-primary-water{--pokemon-accent-primary:rgba(99,144,240,0.32);--pokemon-accent-primary-soft:rgba(99,144,240,0.16)}
+      .accent-primary-electric{--pokemon-accent-primary:rgba(247,208,44,0.3);--pokemon-accent-primary-soft:rgba(247,208,44,0.14)}
+      .accent-primary-grass{--pokemon-accent-primary:rgba(122,199,76,0.32);--pokemon-accent-primary-soft:rgba(122,199,76,0.16)}
+      .accent-primary-ice{--pokemon-accent-primary:rgba(150,217,214,0.28);--pokemon-accent-primary-soft:rgba(150,217,214,0.14)}
+      .accent-primary-fighting{--pokemon-accent-primary:rgba(194,46,40,0.32);--pokemon-accent-primary-soft:rgba(194,46,40,0.16)}
+      .accent-primary-poison{--pokemon-accent-primary:rgba(163,62,161,0.32);--pokemon-accent-primary-soft:rgba(163,62,161,0.16)}
+      .accent-primary-ground{--pokemon-accent-primary:rgba(226,191,101,0.3);--pokemon-accent-primary-soft:rgba(226,191,101,0.14)}
+      .accent-primary-flying{--pokemon-accent-primary:rgba(169,143,243,0.3);--pokemon-accent-primary-soft:rgba(169,143,243,0.14)}
+      .accent-primary-psychic{--pokemon-accent-primary:rgba(249,85,135,0.32);--pokemon-accent-primary-soft:rgba(249,85,135,0.16)}
+      .accent-primary-bug{--pokemon-accent-primary:rgba(166,185,26,0.3);--pokemon-accent-primary-soft:rgba(166,185,26,0.14)}
+      .accent-primary-rock{--pokemon-accent-primary:rgba(182,161,54,0.3);--pokemon-accent-primary-soft:rgba(182,161,54,0.14)}
+      .accent-primary-ghost{--pokemon-accent-primary:rgba(115,87,151,0.32);--pokemon-accent-primary-soft:rgba(115,87,151,0.16)}
+      .accent-primary-dragon{--pokemon-accent-primary:rgba(111,53,252,0.34);--pokemon-accent-primary-soft:rgba(111,53,252,0.18)}
+      .accent-primary-dark{--pokemon-accent-primary:rgba(112,87,70,0.3);--pokemon-accent-primary-soft:rgba(112,87,70,0.14)}
+      .accent-primary-steel{--pokemon-accent-primary:rgba(183,183,206,0.28);--pokemon-accent-primary-soft:rgba(183,183,206,0.14)}
+      .accent-primary-fairy{--pokemon-accent-primary:rgba(214,133,173,0.3);--pokemon-accent-primary-soft:rgba(214,133,173,0.14)}
+      .accent-primary-stellar{--pokemon-accent-primary:rgba(68,102,255,0.34);--pokemon-accent-primary-soft:rgba(68,102,255,0.18)}
+      .accent-primary-shadow{--pokemon-accent-primary:rgba(90,90,120,0.32);--pokemon-accent-primary-soft:rgba(90,90,120,0.16)}
+      .accent-primary-unknown{--pokemon-accent-primary:rgba(107,114,128,0.3);--pokemon-accent-primary-soft:rgba(107,114,128,0.14)}
+
+      .accent-primary-electric,
+      .accent-primary-ice,
+      .accent-primary-ground,
+      .accent-primary-steel,
+      .accent-primary-normal,
+      .accent-primary-fairy {
+        --pokemon-art-shadow: rgba(0, 0, 0, 0.16);
+      }
+
+      .accent-primary-dark,
+      .accent-primary-ghost,
+      .accent-primary-dragon,
+      .accent-primary-shadow,
+      .accent-primary-poison,
+      .accent-primary-psychic,
+      .accent-primary-fire,
+      .accent-primary-fighting {
+        --pokemon-art-shadow: rgba(0, 0, 0, 0.28);
+      }
+
+      .accent-primary-water,
+      .accent-primary-grass,
+      .accent-primary-bug,
+      .accent-primary-rock,
+      .accent-primary-flying,
+      .accent-primary-stellar,
+      .accent-primary-unknown {
+        --pokemon-art-shadow: rgba(0, 0, 0, 0.22);
+      }
+
+      .accent-secondary-normal{--pokemon-accent-secondary:rgba(168,167,122,0.22)}
+      .accent-secondary-fire{--pokemon-accent-secondary:rgba(238,129,48,0.24)}
+      .accent-secondary-water{--pokemon-accent-secondary:rgba(99,144,240,0.24)}
+      .accent-secondary-electric{--pokemon-accent-secondary:rgba(247,208,44,0.22)}
+      .accent-secondary-grass{--pokemon-accent-secondary:rgba(122,199,76,0.24)}
+      .accent-secondary-ice{--pokemon-accent-secondary:rgba(150,217,214,0.2)}
+      .accent-secondary-fighting{--pokemon-accent-secondary:rgba(194,46,40,0.24)}
+      .accent-secondary-poison{--pokemon-accent-secondary:rgba(163,62,161,0.24)}
+      .accent-secondary-ground{--pokemon-accent-secondary:rgba(226,191,101,0.22)}
+      .accent-secondary-flying{--pokemon-accent-secondary:rgba(169,143,243,0.22)}
+      .accent-secondary-psychic{--pokemon-accent-secondary:rgba(249,85,135,0.24)}
+      .accent-secondary-bug{--pokemon-accent-secondary:rgba(166,185,26,0.22)}
+      .accent-secondary-rock{--pokemon-accent-secondary:rgba(182,161,54,0.22)}
+      .accent-secondary-ghost{--pokemon-accent-secondary:rgba(115,87,151,0.24)}
+      .accent-secondary-dragon{--pokemon-accent-secondary:rgba(111,53,252,0.26)}
+      .accent-secondary-dark{--pokemon-accent-secondary:rgba(112,87,70,0.22)}
+      .accent-secondary-steel{--pokemon-accent-secondary:rgba(183,183,206,0.2)}
+      .accent-secondary-fairy{--pokemon-accent-secondary:rgba(214,133,173,0.22)}
+      .accent-secondary-stellar{--pokemon-accent-secondary:rgba(68,102,255,0.26)}
+      .accent-secondary-shadow{--pokemon-accent-secondary:rgba(90,90,120,0.24)}
+      .accent-secondary-unknown{--pokemon-accent-secondary:rgba(107,114,128,0.22)}
+    </style>
+
+    {{ if ne $randomStatus 200 }}
+      <div class="text-center margin-block-3">
+        <div class="color-negative size-h4">Random Pokédex unavailable</div>
+        <div class="color-subdue size-h6">A random Pokémon ID could not be generated right now.</div>
+        <div class="color-subdue size-h6">HTTP {{ $randomStatus }}</div>
+      </div>
+    {{ else if le $pokemonId 0 }}
+      <div class="text-center margin-block-3">
+        <div class="color-primary size-h4">No Pokémon returned</div>
+        <div class="color-subdue size-h6">The random ID service responded successfully, but no usable Pokémon ID was returned.</div>
+      </div>
+    {{ end }}
+    {{ if and (eq $randomStatus 200) (gt $pokemonId 0) }}
+      {{ $pokemon := newRequest (concat "https://pokeapi.co/api/v2/pokemon/" (printf "%d" $pokemonId)) | getResponse }}
+      {{ if eq $pokemon.Response.StatusCode 200 }}
+        {{ $species := newRequest (concat "https://pokeapi.co/api/v2/pokemon-species/" (printf "%d" $pokemonId)) | getResponse }}
+        {{ $speciesOK := eq $species.Response.StatusCode 200 }}
+        {{ $isLegendary := false }}
+        {{ $isMythical := false }}
+        {{ if $speciesOK }}
+          {{ $isLegendary = $species.JSON.Bool "is_legendary" }}
+          {{ $isMythical = $species.JSON.Bool "is_mythical" }}
+        {{ end }}
+        {{ $types := $pokemon.JSON.Array "types" }}
+        {{ $primaryType := "" }}
+        {{ $secondaryType := "" }}
+        {{ range $i, $type := $types }}
+          {{ if eq ($type.Int "slot") 1 }}{{ $primaryType = $type.String "type.name" }}{{ end }}
+          {{ if eq ($type.Int "slot") 2 }}{{ $secondaryType = $type.String "type.name" }}{{ end }}
+        {{ end }}
+        {{ if eq $primaryType "" }}{{ $primaryType = $pokemon.JSON.String "types.0.type.name" }}{{ end }}
+        {{ if eq $secondaryType "" }}{{ $secondaryType = $primaryType }}{{ end }}
+        {{ $artwork := $pokemon.JSON.String "sprites.other.official-artwork.front_default" }}
+        {{ if eq $artwork "" }}{{ $artwork = $pokemon.JSON.String "sprites.front_default" }}{{ end }}
+
+        <div class="widget-small-content-bounds">
+          <div class="pokemon-card accent-primary-{{ $primaryType }} accent-secondary-{{ $secondaryType }}">
+            <div class="pokemon-art-wrap">
+              <img class="pokemon-art" src="{{ $artwork | safeURL }}" alt="{{ $pokemon.JSON.String "name" }}" loading="lazy" onerror="this.src='{{ $pokemon.JSON.String "sprites.front_default" }}'"/>
+            </div>
+
+            <div>
+              <div class="pokemon-heading">
+                <span class="pokemon-name size-h3 color-highlight">{{ $pokemon.JSON.String "name" }}</span>
+                <span class="pokemon-number size-h5">#{{ printf "%03d" ($pokemon.JSON.Int "id") }}</span>
+              </div>
+            </div>
+
+            {{ if or $isLegendary $isMythical }}
+              <div class="pokemon-badges">
+                {{ if $isLegendary }}<span class="pokemon-badge pokemon-badge-legendary">Legendary</span>{{ end }}
+                {{ if $isMythical }}<span class="pokemon-badge pokemon-badge-mythical">Mythical</span>{{ end }}
+              </div>
+            {{ end }}
+
+            <div class="pokemon-types">
+              {{ range $pokemon.JSON.Array "types" }}
+                <span class="pokemon-type type-{{ .String "type.name" }}">{{ .String "type.name" }}</span>
+              {{ end }}
+            </div>
+
+            <div class="pokemon-divider"></div>
+
+            <div class="pokemon-stats">
+              {{ range $pokemon.JSON.Array "stats" }}
+                {{ $s := .String "stat.name" }}
+                <div class="pokemon-stat">
+                  <div class="size-h6 uppercase color-subdue">
+                    {{ if eq $s "hp" }}HP{{ else if eq $s "attack" }}Atk{{ else if eq $s "defense" }}Def{{ else if eq $s "special-attack" }}Sp. Atk{{ else if eq $s "special-defense" }}Sp. Def{{ else if eq $s "speed" }}Speed{{ else }}Stat{{ end }}
+                  </div>
+                  <div class="pokemon-stat-value size-h4 color-highlight">{{ .Int "base_stat" }}</div>
+                </div>
+              {{ end }}
+            </div>
+
+            <div class="pokemon-divider"></div>
+
+            <div class="pokemon-meta">
+              <div class="pokemon-meta-item">
+                <div class="size-h6 uppercase color-subdue">Height</div>
+                <div class="pokemon-meta-value size-h4 color-highlight">
+                  {{ printf "%.1f" (div (toFloat ($pokemon.JSON.Int "height")) 10.0) }}
+                  <span class="pokemon-meta-unit">m</span>
+                </div>
+              </div>
+              <div class="pokemon-meta-item">
+                <div class="size-h6 uppercase color-subdue">Weight</div>
+                <div class="pokemon-meta-value size-h4 color-highlight">
+                  {{ printf "%.1f" (div (toFloat ($pokemon.JSON.Int "weight")) 10.0) }}
+                  <span class="pokemon-meta-unit">kg</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {{ else }}
+        <div class="text-center margin-block-3">
+          <div class="color-negative size-h4">Random Pokémon unavailable</div>
+          <div class="color-subdue size-h6">The PokéAPI entry could not be loaded right now.</div>
+          <div class="color-subdue size-h6">{{ $pokemon.Response.Status }}</div>
+        </div>
+      {{ end }}
+    {{ end }}
