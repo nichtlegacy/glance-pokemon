@@ -12,13 +12,33 @@
     # Gen 7: 722-809
     # Gen 8: 810-905
     # Gen 9: 906-1025
+    # Display language codes:
+    # en, de, fr, es, it, ja, ja-Hrkt, roomaji, ko, zh-Hans, zh-Hant, cs
+    # Falls back to English when a localized species name is unavailable.
     min-id: 1
     max-id: 1025
+    language: en
   template: |
     {{ $configuredMin := .Options.IntOr "min-id" 1 }}
     {{ $configuredMax := .Options.IntOr "max-id" 1025 }}
+    {{ $selectedLanguage := trimSpace (.Options.StringOr "language" "en") }}
+    {{ $selectedLanguageAlt1 := "" }}
+    {{ $selectedLanguageAlt2 := "" }}
+    {{ $selectedLanguageAlt3 := "" }}
     {{ $minID := $configuredMin }}
     {{ $maxID := $configuredMax }}
+    {{ if eq $selectedLanguage "" }}{{ $selectedLanguage = "en" }}{{ end }}
+    {{ if eq $selectedLanguage "ja-Hrkt" }}{{ $selectedLanguageAlt1 = "ja-hrkt" }}
+    {{ else if eq $selectedLanguage "ja-hrkt" }}{{ $selectedLanguageAlt1 = "ja-Hrkt" }}
+    {{ else if eq $selectedLanguage "ja-Roma" }}{{ $selectedLanguageAlt1 = "ja-roma" }}{{ $selectedLanguageAlt2 = "roomaji" }}{{ $selectedLanguageAlt3 = "ja" }}
+    {{ else if eq $selectedLanguage "ja-roma" }}{{ $selectedLanguageAlt1 = "ja-Roma" }}{{ $selectedLanguageAlt2 = "roomaji" }}{{ $selectedLanguageAlt3 = "ja" }}
+    {{ else if eq $selectedLanguage "roomaji" }}{{ $selectedLanguageAlt1 = "ja-Roma" }}{{ $selectedLanguageAlt2 = "ja-roma" }}{{ $selectedLanguageAlt3 = "ja" }}
+    {{ else if eq $selectedLanguage "ja" }}{{ $selectedLanguageAlt1 = "ja-Hrkt" }}{{ $selectedLanguageAlt2 = "ja-hrkt" }}
+    {{ else if eq $selectedLanguage "zh-Hant" }}{{ $selectedLanguageAlt1 = "zh-hant" }}
+    {{ else if eq $selectedLanguage "zh-hant" }}{{ $selectedLanguageAlt1 = "zh-Hant" }}
+    {{ else if eq $selectedLanguage "zh-Hans" }}{{ $selectedLanguageAlt1 = "zh-hans" }}
+    {{ else if eq $selectedLanguage "zh-hans" }}{{ $selectedLanguageAlt1 = "zh-Hans" }}
+    {{ end }}
     {{ if lt $minID 1 }}{{ $minID = 1 }}{{ end }}
     {{ if lt $maxID 1 }}{{ $maxID = 1 }}{{ end }}
     {{ if gt $minID 1025 }}{{ $minID = 1025 }}{{ end }}
@@ -44,6 +64,11 @@
         align-items: center;
         gap: 0.85rem;
         --pokemon-art-shadow: rgba(0, 0, 0, 0.22);
+        --pokemon-art-bg:
+          radial-gradient(circle at 28% 24%, var(--pokemon-accent-primary, rgba(255, 255, 255, 0.24)), transparent 38%),
+          radial-gradient(circle at 76% 30%, var(--pokemon-accent-secondary, rgba(255, 255, 255, 0.18)), transparent 40%),
+          radial-gradient(circle at 52% 78%, var(--pokemon-accent-primary-soft, rgba(255, 255, 255, 0.1)), transparent 46%),
+          linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
       }
 
       .pokemon-art-wrap {
@@ -52,11 +77,11 @@
         justify-content: center;
         border-radius: 999px;
         padding: 1rem;
-        background:
-          radial-gradient(circle at 28% 24%, var(--pokemon-accent-primary, rgba(255, 255, 255, 0.24)), transparent 38%),
-          radial-gradient(circle at 76% 30%, var(--pokemon-accent-secondary, rgba(255, 255, 255, 0.18)), transparent 40%),
-          radial-gradient(circle at 52% 78%, var(--pokemon-accent-primary-soft, rgba(255, 255, 255, 0.1)), transparent 46%),
-          linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+        background: var(--pokemon-art-bg);
+      }
+
+      .pokemon-art-wrap.has-popover {
+        cursor: help;
       }
 
       .pokemon-art {
@@ -64,6 +89,167 @@
         height: 112px;
         object-fit: contain;
         filter: drop-shadow(0 10px 18px var(--pokemon-art-shadow));
+      }
+
+      .pokemon-art-popover {
+        display: inline-flex;
+        flex-direction: column;
+        gap: 0.85rem;
+        min-width: 20rem;
+        max-width: 28rem;
+        text-align: left;
+      }
+
+      .pokemon-art-popover-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        gap: 0.45rem;
+        flex-wrap: wrap;
+        text-align: center;
+      }
+
+      .pokemon-art-popover-title {
+        color: var(--color-text-highlight);
+        font-size: 1.18rem;
+        line-height: 1.26;
+        font-weight: 700;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
+
+      .pokemon-art-popover-number {
+        color: var(--color-text-subdue);
+        font-size: 0.92rem;
+        line-height: 1.2;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+
+      .pokemon-art-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.7rem;
+      }
+
+      .pokemon-art-tile {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        min-width: 0;
+      }
+
+      .pokemon-art-tile-media {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 6.4rem;
+        border-radius: var(--border-radius);
+        padding: 0.8rem;
+      }
+
+      .pokemon-art-tile-media img {
+        width: 100%;
+        height: 5.6rem;
+        object-fit: contain;
+        display: block;
+      }
+
+      .pokemon-art-tile-label {
+        color: var(--color-text-subdue);
+        font-size: 0.82rem;
+        line-height: 1.2;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        font-weight: 700;
+        text-align: center;
+      }
+
+      .pokemon-cry-chips {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.6rem;
+      }
+
+      .pokemon-art-section-heading {
+        color: var(--color-text-subdue);
+        font-size: 0.82rem;
+        line-height: 1.2;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 700;
+        text-align: center;
+      }
+
+      .pokemon-cry-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.38rem;
+        min-width: 0;
+        border: 0;
+        border-radius: 999px;
+        padding: 0.48rem 0.9rem;
+        background: var(--color-widget-background-highlight);
+        color: var(--color-text-highlight);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+        font-size: 0.86rem;
+        line-height: 1.2;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .pokemon-cry-chip:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      .pokemon-cry-chip:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+
+      .pokemon-art-flavor {
+        color: var(--color-text-highlight);
+        font-size: 0.98rem;
+        line-height: 1.42;
+        text-align: left;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
+
+      .pokemon-art-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+      }
+
+      .pokemon-art-meta-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .pokemon-art-meta-label {
+        color: var(--color-text-subdue);
+        font-size: 0.92rem;
+        line-height: 1.28;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .pokemon-art-meta-value {
+        color: var(--color-text-highlight);
+        font-size: 0.96rem;
+        line-height: 1.28;
+        text-align: right;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        margin-left: auto;
       }
 
       .pokemon-heading {
@@ -78,8 +264,82 @@
         color: var(--color-text-subdue);
       }
 
-      .pokemon-name {
-        text-transform: capitalize;
+      .pokemon-name-trigger {
+        display: inline-flex;
+        align-items: baseline;
+      }
+
+      .pokemon-name-trigger.has-popover {
+        cursor: help;
+      }
+
+      .pokemon-name-popover {
+        display: inline-flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        min-width: 16rem;
+        max-width: 22rem;
+        text-align: left;
+      }
+
+      .pokemon-name-popover-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.18rem;
+        text-align: center;
+      }
+
+      .pokemon-name-popover-title {
+        color: var(--color-text-highlight);
+        font-size: 1.18rem;
+        line-height: 1.26;
+        font-weight: 700;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
+
+      .pokemon-name-popover-number {
+        color: var(--color-text-subdue);
+        font-size: 0.92rem;
+        line-height: 1.2;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+
+      .pokemon-name-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+      }
+
+      .pokemon-name-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .pokemon-name-language {
+        color: var(--color-text-subdue);
+        font-size: 1.14rem;
+        line-height: 1.38;
+        letter-spacing: 0.03em;
+        font-weight: 700;
+        white-space: nowrap;
+        text-align: left;
+        flex-shrink: 0;
+      }
+
+      .pokemon-name-value {
+        color: var(--color-text-highlight);
+        line-height: 1.38;
+        font-size: 1.14rem;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        text-align: right;
+        margin-left: auto;
       }
 
       .pokemon-badges,
@@ -125,7 +385,8 @@
         gap: 0.8rem 0.7rem;
       }
 
-      .pokemon-divider {
+      .pokemon-divider,
+      .pokemon-name-popover-divider {
         align-self: stretch;
         flex-shrink: 0;
         width: 100%;
@@ -150,10 +411,11 @@
       }
 
       .pokemon-meta {
-        width: 100%;
+        width: 70%;
+        margin-inline: auto;
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.8rem;
+        gap: 0.25rem;
       }
 
       .pokemon-meta-item {
@@ -162,6 +424,7 @@
 
       .pokemon-meta-value {
         line-height: 1.05;
+        font-size: 1.35rem;
       }
 
       .pokemon-meta-unit {
@@ -286,10 +549,23 @@
         {{ $speciesOK := eq $species.Response.StatusCode 200 }}
         {{ $isLegendary := false }}
         {{ $isMythical := false }}
+        {{ $localizedNames := $species.JSON.Array "names" }}
+        {{ $englishName := $pokemon.JSON.String "name" }}
+        {{ $displayName := $englishName }}
+        {{ $selectedLanguageFound := false }}
+        {{ $hasLocalizedNames := and $speciesOK (gt (len $localizedNames) 0) }}
         {{ if $speciesOK }}
           {{ $isLegendary = $species.JSON.Bool "is_legendary" }}
           {{ $isMythical = $species.JSON.Bool "is_mythical" }}
+          {{ range $localizedNames }}
+            {{ if eq (.String "language.name") "en" }}{{ $englishName = .String "name" }}{{ end }}
+            {{ if or (eq (.String "language.name") $selectedLanguage) (eq (.String "language.name") $selectedLanguageAlt1) (eq (.String "language.name") $selectedLanguageAlt2) (eq (.String "language.name") $selectedLanguageAlt3) }}
+              {{ $displayName = .String "name" }}
+              {{ $selectedLanguageFound = true }}
+            {{ end }}
+          {{ end }}
         {{ end }}
+        {{ if or (eq $selectedLanguage "en") (not $selectedLanguageFound) }}{{ $displayName = $englishName }}{{ end }}
         {{ $types := $pokemon.JSON.Array "types" }}
         {{ $primaryType := "" }}
         {{ $secondaryType := "" }}
@@ -299,18 +575,311 @@
         {{ end }}
         {{ if eq $primaryType "" }}{{ $primaryType = $pokemon.JSON.String "types.0.type.name" }}{{ end }}
         {{ if eq $secondaryType "" }}{{ $secondaryType = $primaryType }}{{ end }}
-        {{ $artwork := $pokemon.JSON.String "sprites.other.official-artwork.front_default" }}
+        {{ $officialArtwork := $pokemon.JSON.String "sprites.other.official-artwork.front_default" }}
+        {{ $artwork := $officialArtwork }}
         {{ if eq $artwork "" }}{{ $artwork = $pokemon.JSON.String "sprites.front_default" }}{{ end }}
+        {{ $officialArtworkShiny := $pokemon.JSON.String "sprites.other.official-artwork.front_shiny" }}
+        {{ $homeArtwork := $pokemon.JSON.String "sprites.other.home.front_default" }}
+        {{ $homeArtworkShiny := $pokemon.JSON.String "sprites.other.home.front_shiny" }}
+        {{ $cryLatest := $pokemon.JSON.String "cries.latest" }}
+        {{ $cryLegacy := $pokemon.JSON.String "cries.legacy" }}
+        {{ $selectedFlavorText := "" }}
+        {{ $englishFlavorText := "" }}
+        {{ $selectedFlavorTextAlt1 := "" }}
+        {{ $selectedFlavorTextAlt2 := "" }}
+        {{ $selectedFlavorTextAlt3 := "" }}
+        {{ $selectedGenus := "" }}
+        {{ $englishGenus := "" }}
+        {{ $captureRateLabel := "" }}
+        {{ $genderLabel := "" }}
+        {{ $formsLabel := "" }}
+        {{ if $speciesOK }}
+          {{ $captureRateRaw := $species.JSON.Int "capture_rate" }}
+          {{ $captureRatePct := mul (div (toFloat $captureRateRaw) 255.0) 100.0 }}
+          {{ $captureRateLabel = printf "%d/255 · %.1f%%" $captureRateRaw $captureRatePct }}
+          {{ range $species.JSON.Array "flavor_text_entries" }}
+            {{ $entryLang := .String "language.name" }}
+            {{ $entryText := .String "flavor_text" }}
+            {{ if and (eq $entryLang "en") (eq $englishFlavorText "") }}
+              {{ $englishFlavorText = $entryText }}
+            {{ end }}
+            {{ if and (eq $entryLang $selectedLanguage) (eq $selectedFlavorText "") }}
+              {{ $selectedFlavorText = $entryText }}
+            {{ else if and (eq $entryLang $selectedLanguageAlt1) (eq $selectedFlavorTextAlt1 "") }}
+              {{ $selectedFlavorTextAlt1 = $entryText }}
+            {{ else if and (eq $entryLang $selectedLanguageAlt2) (eq $selectedFlavorTextAlt2 "") }}
+              {{ $selectedFlavorTextAlt2 = $entryText }}
+            {{ else if and (eq $entryLang $selectedLanguageAlt3) (eq $selectedFlavorTextAlt3 "") }}
+              {{ $selectedFlavorTextAlt3 = $entryText }}
+            {{ end }}
+          {{ end }}
+          {{ $selectedGenusPriority := 999 }}
+          {{ range $species.JSON.Array "genera" }}
+            {{ $entryLang := .String "language.name" }}
+            {{ if eq $entryLang "en" }}{{ $englishGenus = .String "genus" }}{{ end }}
+            {{ if eq $entryLang $selectedLanguage }}
+              {{ $selectedGenus = .String "genus" }}
+              {{ $selectedGenusPriority = 0 }}
+            {{ else if and (gt $selectedGenusPriority 1) (eq $entryLang $selectedLanguageAlt1) }}
+              {{ $selectedGenus = .String "genus" }}
+              {{ $selectedGenusPriority = 1 }}
+            {{ else if and (gt $selectedGenusPriority 2) (eq $entryLang $selectedLanguageAlt2) }}
+              {{ $selectedGenus = .String "genus" }}
+              {{ $selectedGenusPriority = 2 }}
+            {{ else if and (gt $selectedGenusPriority 3) (eq $entryLang $selectedLanguageAlt3) }}
+              {{ $selectedGenus = .String "genus" }}
+              {{ $selectedGenusPriority = 3 }}
+            {{ end }}
+          {{ end }}
+          {{ $genderRate := $species.JSON.Int "gender_rate" }}
+          {{ if eq $genderRate -1 }}
+            {{ $genderLabel = "⚲ Genderless" }}
+          {{ else if eq $genderRate 0 }}
+            {{ $genderLabel = "♂ Male only" }}
+          {{ else if eq $genderRate 8 }}
+            {{ $genderLabel = "♀ Female only" }}
+          {{ else }}
+            {{ $femalePct := mul (toFloat $genderRate) 12.5 }}
+            {{ $malePct := sub 100.0 $femalePct }}
+            {{ $genderLabel = printf "♂ %.1f%% / ♀ %.1f%%" $malePct $femalePct }}
+          {{ end }}
+        {{ end }}
+        {{ if eq $selectedFlavorText "" }}{{ $selectedFlavorText = $selectedFlavorTextAlt1 }}{{ end }}
+        {{ if eq $selectedFlavorText "" }}{{ $selectedFlavorText = $selectedFlavorTextAlt2 }}{{ end }}
+        {{ if eq $selectedFlavorText "" }}{{ $selectedFlavorText = $selectedFlavorTextAlt3 }}{{ end }}
+        {{ if eq $selectedFlavorText "" }}{{ $selectedFlavorText = $englishFlavorText }}{{ end }}
+        {{ if eq $selectedGenus "" }}{{ $selectedGenus = $englishGenus }}{{ end }}
+        {{ $selectedFlavorText = replaceAll "\n" " " $selectedFlavorText }}
+        {{ $selectedFlavorText = replaceAll "\f" " " $selectedFlavorText }}
+        {{ $formCount := len ($pokemon.JSON.Array "forms") }}
+        {{ if gt $formCount 1 }}{{ $formsLabel = printf "%d variants" $formCount }}{{ end }}
+        {{ $generationLabel := "" }}
+        {{ $generationName := $species.JSON.String "generation.name" }}
+        {{ if eq $generationName "generation-i" }}{{ $generationLabel = "Gen I" }}
+        {{ else if eq $generationName "generation-ii" }}{{ $generationLabel = "Gen II" }}
+        {{ else if eq $generationName "generation-iii" }}{{ $generationLabel = "Gen III" }}
+        {{ else if eq $generationName "generation-iv" }}{{ $generationLabel = "Gen IV" }}
+        {{ else if eq $generationName "generation-v" }}{{ $generationLabel = "Gen V" }}
+        {{ else if eq $generationName "generation-vi" }}{{ $generationLabel = "Gen VI" }}
+        {{ else if eq $generationName "generation-vii" }}{{ $generationLabel = "Gen VII" }}
+        {{ else if eq $generationName "generation-viii" }}{{ $generationLabel = "Gen VIII" }}
+        {{ else if eq $generationName "generation-ix" }}{{ $generationLabel = "Gen IX" }}
+        {{ end }}
+        {{ $hasArtworkGallery := or (ne $officialArtwork "") (ne $officialArtworkShiny "") (ne $homeArtwork "") (ne $homeArtworkShiny "") }}
+        {{ $hasCryBlock := or (ne $cryLatest "") (ne $cryLegacy "") }}
+        {{ $hasArtworkMeta := or (ne $selectedGenus "") (ne $generationLabel "") (ne $captureRateLabel "") (ne $genderLabel "") (ne $formsLabel "") }}
+        {{ $hasArtworkPopover := or $hasArtworkGallery $hasCryBlock (ne $selectedFlavorText "") $hasArtworkMeta }}
 
         <div class="widget-small-content-bounds">
           <div class="pokemon-card accent-primary-{{ $primaryType }} accent-secondary-{{ $secondaryType }}">
-            <div class="pokemon-art-wrap">
-              <img class="pokemon-art" src="{{ $artwork | safeURL }}" alt="{{ $pokemon.JSON.String "name" }}" loading="lazy" onerror="this.src='{{ $pokemon.JSON.String "sprites.front_default" }}'"/>
+            <div
+              class="pokemon-art-wrap{{ if $hasArtworkPopover }} has-popover{{ end }}"
+              {{ if $hasArtworkPopover }}data-popover-type="html" data-popover-position="above" data-popover-max-width="26rem" data-popover-show-delay="250"{{ end }}
+            >
+              <img class="pokemon-art" src="{{ $artwork | safeURL }}" alt="{{ $displayName }}" loading="lazy" onerror="this.src='{{ $pokemon.JSON.String "sprites.front_default" }}'"/>
+              {{ if $hasArtworkPopover }}
+                <span data-popover-html>
+                  <span class="pokemon-art-popover">
+                    <span class="pokemon-art-popover-header">
+                      <span class="pokemon-art-popover-title">{{ $displayName }}</span>
+                      <span class="pokemon-art-popover-number">#{{ printf "%03d" ($pokemon.JSON.Int "id") }}</span>
+                    </span>
+                    <span class="pokemon-name-popover-divider"></span>
+                    {{ if $hasArtworkGallery }}
+                      <span class="pokemon-art-grid">
+                        {{ if ne $officialArtwork "" }}
+                          <span class="pokemon-art-tile">
+                            <span class="pokemon-art-tile-media">
+                              <img src="{{ $officialArtwork | safeURL }}" alt="" loading="lazy" />
+                            </span>
+                            <span class="pokemon-art-tile-label">Official</span>
+                          </span>
+                        {{ end }}
+                        {{ if ne $officialArtworkShiny "" }}
+                          <span class="pokemon-art-tile">
+                            <span class="pokemon-art-tile-media">
+                              <img src="{{ $officialArtworkShiny | safeURL }}" alt="" loading="lazy" />
+                            </span>
+                            <span class="pokemon-art-tile-label">Official Shiny</span>
+                          </span>
+                        {{ end }}
+                        {{ if ne $homeArtwork "" }}
+                          <span class="pokemon-art-tile">
+                            <span class="pokemon-art-tile-media">
+                              <img src="{{ $homeArtwork | safeURL }}" alt="" loading="lazy" />
+                            </span>
+                            <span class="pokemon-art-tile-label">Home</span>
+                          </span>
+                        {{ end }}
+                        {{ if ne $homeArtworkShiny "" }}
+                          <span class="pokemon-art-tile">
+                            <span class="pokemon-art-tile-media">
+                              <img src="{{ $homeArtworkShiny | safeURL }}" alt="" loading="lazy" />
+                            </span>
+                            <span class="pokemon-art-tile-label">Home Shiny</span>
+                          </span>
+                        {{ end }}
+                      </span>
+                    {{ end }}
+                    {{ if $hasCryBlock }}
+                      {{ if $hasArtworkGallery }}<span class="pokemon-name-popover-divider"></span>{{ end }}
+                      <span class="pokemon-art-section-heading">Cries</span>
+                      <span class="pokemon-cry-chips">
+                        {{ if ne $cryLatest "" }}
+                          <button
+                            class="pokemon-cry-chip"
+                            type="button"
+                            data-cry-chip="latest"
+                            onclick="(function(btn){
+                              var wrap=btn.closest('.pokemon-art-popover');
+                              if(!wrap)return;
+                              var latest=wrap.querySelector('[data-pokemon-cry=latest]');
+                              var legacy=wrap.querySelector('[data-pokemon-cry=legacy]');
+                              if(!latest)return;
+                              latest.volume=0.22;
+                              if(latest.paused){ if(legacy){ legacy.pause(); legacy.currentTime=0; } latest.play(); btn.textContent='Pause Latest'; }
+                              else { latest.pause(); latest.currentTime=0; btn.textContent='Latest'; }
+                              var other=wrap.querySelector('[data-cry-chip=legacy]');
+                              if(other){ other.textContent='Legacy'; }
+                            })(this)">
+                            Latest
+                          </button>
+                          <audio
+                            preload="none"
+                            data-pokemon-cry="latest"
+                            src="{{ $cryLatest | safeURL }}"
+                            onended="(function(audio){ var wrap=audio.closest('.pokemon-art-popover'); if(!wrap)return; var latestBtn=wrap.querySelector('[data-cry-chip=latest]'); if(latestBtn){ latestBtn.textContent='Latest'; } var legacyBtn=wrap.querySelector('[data-cry-chip=legacy]'); if(legacyBtn){ legacyBtn.textContent='Legacy'; } })(this)">
+                          </audio>
+                        {{ end }}
+                        {{ if ne $cryLegacy "" }}
+                          <button
+                            class="pokemon-cry-chip"
+                            type="button"
+                            data-cry-chip="legacy"
+                            onclick="(function(btn){
+                              var wrap=btn.closest('.pokemon-art-popover');
+                              if(!wrap)return;
+                              var latest=wrap.querySelector('[data-pokemon-cry=latest]');
+                              var legacy=wrap.querySelector('[data-pokemon-cry=legacy]');
+                              if(!legacy)return;
+                              legacy.volume=0.22;
+                              if(legacy.paused){ if(latest){ latest.pause(); latest.currentTime=0; } legacy.play(); btn.textContent='Pause Legacy'; }
+                              else { legacy.pause(); legacy.currentTime=0; btn.textContent='Legacy'; }
+                              var other=wrap.querySelector('[data-cry-chip=latest]');
+                              if(other){ other.textContent='Latest'; }
+                            })(this)">
+                            Legacy
+                          </button>
+                          <audio
+                            preload="none"
+                            data-pokemon-cry="legacy"
+                            src="{{ $cryLegacy | safeURL }}"
+                            onended="(function(audio){ var wrap=audio.closest('.pokemon-art-popover'); if(!wrap)return; var latestBtn=wrap.querySelector('[data-cry-chip=latest]'); if(latestBtn){ latestBtn.textContent='Latest'; } var legacyBtn=wrap.querySelector('[data-cry-chip=legacy]'); if(legacyBtn){ legacyBtn.textContent='Legacy'; } })(this)">
+                          </audio>
+                        {{ end }}
+                      </span>
+                    {{ end }}
+                    {{ if $hasArtworkMeta }}
+                      {{ if or $hasArtworkGallery $hasCryBlock }}<span class="pokemon-name-popover-divider"></span>{{ end }}
+                      <span class="pokemon-art-section-heading">Details</span>
+                      <span class="pokemon-art-meta">
+                        {{ if ne $selectedGenus "" }}
+                          <span class="pokemon-art-meta-row">
+                            <span class="pokemon-art-meta-label">Genus</span>
+                            <span class="pokemon-art-meta-value">{{ $selectedGenus }}</span>
+                          </span>
+                        {{ end }}
+                        {{ if ne $generationLabel "" }}
+                          <span class="pokemon-art-meta-row">
+                            <span class="pokemon-art-meta-label">Generation</span>
+                            <span class="pokemon-art-meta-value">{{ $generationLabel }}</span>
+                          </span>
+                        {{ end }}
+                        {{ if ne $captureRateLabel "" }}
+                          <span class="pokemon-art-meta-row">
+                            <span class="pokemon-art-meta-label">Capture Rate</span>
+                            <span class="pokemon-art-meta-value">{{ $captureRateLabel }}</span>
+                          </span>
+                        {{ end }}
+                        {{ if ne $genderLabel "" }}
+                          <span class="pokemon-art-meta-row">
+                            <span class="pokemon-art-meta-label">Gender</span>
+                            <span class="pokemon-art-meta-value">{{ $genderLabel }}</span>
+                          </span>
+                        {{ end }}
+                        {{ if ne $formsLabel "" }}
+                          <span class="pokemon-art-meta-row">
+                            <span class="pokemon-art-meta-label">Forms</span>
+                            <span class="pokemon-art-meta-value">{{ $formsLabel }}</span>
+                          </span>
+                        {{ end }}
+                      </span>
+                    {{ end }}
+                    {{ if ne $selectedFlavorText "" }}
+                      {{ if or $hasArtworkGallery $hasCryBlock $hasArtworkMeta }}<span class="pokemon-name-popover-divider"></span>{{ end }}
+                      <span class="pokemon-art-section-heading">Pokédex Entry</span>
+                      <span class="pokemon-art-flavor">{{ $selectedFlavorText }}</span>
+                    {{ end }}
+                  </span>
+                </span>
+              {{ end }}
             </div>
 
             <div>
               <div class="pokemon-heading">
-                <span class="pokemon-name size-h3 color-highlight">{{ $pokemon.JSON.String "name" }}</span>
+                <span
+                  class="pokemon-name-trigger{{ if $hasLocalizedNames }} has-popover{{ end }}"
+                  {{ if $hasLocalizedNames }}data-popover-type="html" data-popover-position="above" data-popover-max-width="24rem" data-popover-show-delay="250"{{ end }}
+                >
+                  <span class="pokemon-name size-h3 color-highlight">{{ $displayName }}</span>
+                  {{ if $hasLocalizedNames }}
+                    <span data-popover-html>
+                      <span class="pokemon-name-popover">
+                        <span class="pokemon-name-popover-header">
+                          <span class="pokemon-name-popover-title">{{ $englishName }}</span>
+                          <span class="pokemon-name-popover-number">#{{ printf "%03d" ($pokemon.JSON.Int "id") }}</span>
+                        </span>
+                        <span class="pokemon-name-popover-divider"></span>
+                        <span class="pokemon-name-list">
+                          {{ range $localizedNames }}
+                            {{ $languageName := .String "language.name" }}
+                            {{ $flag := "🌐" }}
+                            {{ $languageLabel := $languageName }}
+                            {{ if eq $languageName "en" }}{{ $flag = "🇬🇧" }}
+                            {{ $languageLabel = "English" }}
+                            {{ else if eq $languageName "ja" }}{{ $flag = "🇯🇵" }}
+                            {{ $languageLabel = "日本語" }}
+                            {{ else if or (eq $languageName "ja-Hrkt") (eq $languageName "ja-hrkt") }}{{ $flag = "🇯🇵" }}
+                            {{ $languageLabel = "にほんご" }}
+                            {{ else if or (eq $languageName "roomaji") (eq $languageName "ja-Roma") (eq $languageName "ja-roma") }}{{ $flag = "🇯🇵" }}
+                            {{ $languageLabel = "Romaji" }}
+                            {{ else if eq $languageName "ko" }}{{ $flag = "🇰🇷" }}
+                            {{ $languageLabel = "한국어" }}
+                            {{ else if or (eq $languageName "zh-Hant") (eq $languageName "zh-hant") }}{{ $flag = "🇹🇼" }}
+                            {{ $languageLabel = "繁體中文" }}
+                            {{ else if or (eq $languageName "zh-Hans") (eq $languageName "zh-hans") }}{{ $flag = "🇨🇳" }}
+                            {{ $languageLabel = "简体中文" }}
+                            {{ else if eq $languageName "fr" }}{{ $flag = "🇫🇷" }}
+                            {{ $languageLabel = "Français" }}
+                            {{ else if eq $languageName "de" }}{{ $flag = "🇩🇪" }}
+                            {{ $languageLabel = "Deutsch" }}
+                            {{ else if eq $languageName "es" }}{{ $flag = "🇪🇸" }}
+                            {{ $languageLabel = "Español" }}
+                            {{ else if eq $languageName "it" }}{{ $flag = "🇮🇹" }}
+                            {{ $languageLabel = "Italiano" }}
+                            {{ else if eq $languageName "cs" }}{{ $flag = "🇨🇿" }}
+                            {{ $languageLabel = "Čeština" }}
+                            {{ end }}
+                            <span class="pokemon-name-row">
+                              <span class="pokemon-name-language">{{ $flag }} {{ $languageLabel }}</span>
+                              <span class="pokemon-name-value">{{ .String "name" }}</span>
+                            </span>
+                          {{ end }}
+                        </span>
+                      </span>
+                    </span>
+                  {{ end }}
+                </span>
                 <span class="pokemon-number size-h5">#{{ printf "%03d" ($pokemon.JSON.Int "id") }}</span>
               </div>
             </div>
@@ -346,15 +915,15 @@
 
             <div class="pokemon-meta">
               <div class="pokemon-meta-item">
-                <div class="size-h6 uppercase color-subdue">Height</div>
-                <div class="pokemon-meta-value size-h4 color-highlight">
+                <div class="size-h6 color-subdue">Height</div>
+                <div class="pokemon-meta-value color-highlight">
                   {{ printf "%.1f" (div (toFloat ($pokemon.JSON.Int "height")) 10.0) }}
                   <span class="pokemon-meta-unit">m</span>
                 </div>
               </div>
               <div class="pokemon-meta-item">
-                <div class="size-h6 uppercase color-subdue">Weight</div>
-                <div class="pokemon-meta-value size-h4 color-highlight">
+                <div class="size-h6 color-subdue">Weight</div>
+                <div class="pokemon-meta-value color-highlight">
                   {{ printf "%.1f" (div (toFloat ($pokemon.JSON.Int "weight")) 10.0) }}
                   <span class="pokemon-meta-unit">kg</span>
                 </div>

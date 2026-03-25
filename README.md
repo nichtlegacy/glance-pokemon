@@ -33,13 +33,24 @@
   </tr>
 </table>
 
+<table align="center" border="0">
+  <tr>
+    <td align="center"><img src="docs/pokemon-widget-artwork-popover.png" alt="Random Pokemon artwork popover preview" height="280"></td>  
+    <td align="center"><img src="docs/pokemon-widget-name-popover.png" alt="Random Pokemon localized name popover preview" height="280"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><em>Artwork Popover</em></sub></td>  
+    <td align="center"><sub><em>Name Popover</em></sub></td>
+  </tr>
+</table>
+
 ---
 
 ## Overview
 
 | Widget | Purpose | Best Fit | File |
 |---|---|---|---|
-| Random Pokemon | Show a random Pokemon with official artwork, type chips, base stats, height, weight, and optional legendary or mythical badges | `small` | `widgets/random-pokemon.yml` |
+| Random Pokemon | Show a random Pokemon with official artwork, type chips, base stats, height, weight, optional legendary or mythical badges, a configurable display language, and a hover popover for localized species names | `small` | `widgets/random-pokemon.yml` |
 
 The widget is designed for a compact sidebar-style Glance placement and renders directly from public APIs without any additional backend or local service:
 
@@ -53,7 +64,7 @@ The widget is designed for a compact sidebar-style Glance placement and renders 
 1. Glance requests a random Pokemon ID from `randomnumberapi.com`.
 2. The widget loads the Pokemon record from `https://pokeapi.co/api/v2/pokemon/<id>`.
 3. It loads the species record from `https://pokeapi.co/api/v2/pokemon-species/<id>`.
-4. The template renders artwork, type colors, stats, physical attributes, and optional `Legendary` or `Mythical` badges.
+4. The template renders artwork, type colors, stats, physical attributes, optional `Legendary` or `Mythical` badges, the configured display language, and localized species names in a native Glance hover popover.
 
 ---
 
@@ -73,6 +84,7 @@ pages:
         widgets:
           - $include: widgets/random-pokemon.yml
             options:
+              language: en
               min-id: 1
               max-id: 151
 ```
@@ -89,11 +101,14 @@ Reference config: `examples/glance.yml`
 |---|---|---|---|
 | `min-id` | int | `1` | Lowest Pokedex number allowed for the random selection |
 | `max-id` | int | `1025` | Highest Pokedex number allowed for the random selection |
+| `language` | string | `en` | PokeAPI language code used for the visible Pokemon name, with automatic fallback to English if that translation is unavailable |
 
 Behavior notes:
 
 - the widget clamps values to the supported national Pokedex range of `1-1025`
 - if `min-id` is greater than `max-id`, the widget swaps them automatically
+- `language` expects a PokeAPI language identifier such as `en`, `de`, `fr`, `ja`, `ja-Hrkt`, `ko`, `zh-Hans`, or `zh-Hant`
+- if the selected `language` is missing for a Pokemon species, the widget falls back to English automatically
 - this makes `Gen 1 only`, `Gen 1-4`, or `Gen 4 only` setups possible without editing the template
 
 ### Generation Ranges
@@ -117,6 +132,7 @@ Behavior notes:
 ```yaml
 - $include: widgets/random-pokemon.yml
   options:
+    language: en
     min-id: 1
     max-id: 151
 ```
@@ -126,6 +142,7 @@ Behavior notes:
 ```yaml
 - $include: widgets/random-pokemon.yml
   options:
+    language: en
     min-id: 1
     max-id: 493
 ```
@@ -135,8 +152,19 @@ Behavior notes:
 ```yaml
 - $include: widgets/random-pokemon.yml
   options:
+    language: en
     min-id: 387
     max-id: 493
+```
+
+**German display name**
+
+```yaml
+- $include: widgets/random-pokemon.yml
+  options:
+    language: de
+    min-id: 1
+    max-id: 1025
 ```
 
 ---
@@ -146,7 +174,7 @@ Behavior notes:
 ### Random Pokemon (`widgets/random-pokemon.yml`)
 
 <p align="center">
-  <img src="docs/pokemon-widget.png" alt="Random Pokemon widget preview" width="420">
+  <img src="docs/pokemon-widget-3.png" alt="Random Pokemon widget preview" width="420">
 </p>
 
 ```yaml
@@ -154,6 +182,7 @@ Behavior notes:
   title: Random Pokemon
   cache: 5m
   options:
+    language: en
     min-id: 1
     max-id: 1025
   template: |
@@ -162,11 +191,41 @@ Behavior notes:
     ...
 ```
 
+### Localized Name Popover
+
+Hovering the visible Pokemon name opens a native Glance HTML popover.
+
+<p align="center">
+  <img src="docs/pokemon-widget-name-popover.png" alt="Random Pokemon localized name popover preview" width="420">
+</p>
+
+- the popover header keeps the English species name and Pokédex number centered at the top
+- the body lists localized species names in two columns: `flag + localized language label` on the left and the localized name on the right
+- the visible card title follows `options.language`, while the popover remains a multilingual reference view
+- unsupported or missing translations fall back to English for the visible card title
+
+### Artwork Popover
+
+Hovering the artwork opens a separate native Glance HTML popover for visual details.
+
+<p align="center">
+  <img src="docs/pokemon-widget-artwork-popover.png" alt="Random Pokemon artwork popover preview" width="420">
+</p>
+
+- the popover shows up to four sprite variants: `official`, `official shiny`, `home`, and `home shiny`
+- compact cry chips let you play either the `latest` or `legacy` Pokemon cry directly from the artwork popover
+- localized species metadata such as genus uses `options.language`, with English fallback when needed
+- compact extra metadata includes generation, capture rate, gender distribution, and form count when applicable
+- the Pokédex flavor text also follows `options.language`, with English fallback when that language has no matching entry
+
 ### Behavior Notes
 
 - the widget is tuned for a `small` Glance column
 - each refresh selects a new random Pokemon and caches the result for `5m`
 - the selection range can be limited with `min-id` and `max-id`
+- the visible Pokemon name follows `options.language`, defaulting to English
+- hovering the Pokemon name opens a native Glance popover with the English species name and Pokédex number centered at the top, then flags plus localized language labels on the left and localized names on the right
+- hovering the artwork opens a second popover with alternate sprite versions and a localized Pokédex entry
 - the artwork circle, divider accents, and artwork shadow adapt to the Pokemon type palette
 - dual-type Pokemon blend primary and secondary type colors in the accent treatment
 - species data adds `Legendary` and `Mythical` badges when available
