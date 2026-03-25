@@ -133,6 +133,16 @@
         gap: 0.7rem;
       }
 
+      .pokemon-art-grid-full {
+        grid-column: 1 / -1;
+        display: flex;
+        justify-content: center;
+      }
+
+      .pokemon-art-grid-full .pokemon-art-tile {
+        width: min(100%, calc((100% - 0.7rem) / 2));
+      }
+
       .pokemon-art-tile {
         display: flex;
         flex-direction: column;
@@ -581,6 +591,7 @@
         {{ $officialArtworkShiny := $pokemon.JSON.String "sprites.other.official-artwork.front_shiny" }}
         {{ $homeArtwork := $pokemon.JSON.String "sprites.other.home.front_default" }}
         {{ $homeArtworkShiny := $pokemon.JSON.String "sprites.other.home.front_shiny" }}
+        {{ $dreamWorldArtwork := $pokemon.JSON.String "sprites.other.dream_world.front_default" }}
         {{ $cryLatest := $pokemon.JSON.String "cries.latest" }}
         {{ $cryLegacy := $pokemon.JSON.String "cries.legacy" }}
         {{ $selectedFlavorText := "" }}
@@ -665,7 +676,7 @@
         {{ else if eq $generationName "generation-viii" }}{{ $generationLabel = "Gen VIII" }}
         {{ else if eq $generationName "generation-ix" }}{{ $generationLabel = "Gen IX" }}
         {{ end }}
-        {{ $hasArtworkGallery := or (ne $officialArtwork "") (ne $officialArtworkShiny "") (ne $homeArtwork "") (ne $homeArtworkShiny "") }}
+        {{ $hasArtworkGallery := or (ne $officialArtwork "") (ne $officialArtworkShiny "") (ne $homeArtwork "") (ne $homeArtworkShiny "") (ne $dreamWorldArtwork "") }}
         {{ $hasCryBlock := or (ne $cryLatest "") (ne $cryLegacy "") }}
         {{ $hasArtworkMeta := or (ne $selectedGenus "") (ne $generationLabel "") (ne $captureRateLabel "") (ne $genderLabel "") (ne $formsLabel "") }}
         {{ $hasArtworkPopover := or $hasArtworkGallery $hasCryBlock (ne $selectedFlavorText "") $hasArtworkMeta }}
@@ -717,6 +728,16 @@
                               <img src="{{ $homeArtworkShiny | safeURL }}" alt="" loading="lazy" />
                             </span>
                             <span class="pokemon-art-tile-label">Home Shiny</span>
+                          </span>
+                        {{ end }}
+                        {{ if ne $dreamWorldArtwork "" }}
+                          <span class="pokemon-art-grid-full">
+                            <span class="pokemon-art-tile">
+                              <span class="pokemon-art-tile-media">
+                                <img src="{{ $dreamWorldArtwork | safeURL }}" alt="" loading="lazy" />
+                              </span>
+                              <span class="pokemon-art-tile-label">Dream World</span>
+                            </span>
                           </span>
                         {{ end }}
                       </span>
